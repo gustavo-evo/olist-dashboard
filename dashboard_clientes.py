@@ -115,8 +115,8 @@ def verificar_login():
         st.markdown("<h4 style='color:#7c5cbf; text-align:center'>Dashboard de Clientes — Acesso Restrito</h4>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-        usuario = st.text_input("Usuário")
-        senha   = st.text_input("Senha", type="password")
+        usuario = st.text_input("Usuário", key="login_usuario")
+        senha = st.text_input("Senha", type="password", key="login_senha")
 
         if st.button("Entrar", use_container_width=True):
             usuarios = st.secrets.get("usuarios", {})
@@ -166,7 +166,7 @@ def mostrar_dashboard():
     for i, nivel_btn in enumerate(ordem):
         with cols_filtro[i]:
             ativo = st.session_state.nivel_selecionado == nivel_btn
-            if st.button(nivel_btn, key=f"btn_{nivel_btn}", use_container_width=True):
+            if st.button(nivel_btn, key=f"filtro_nivel_{i}_{nivel_btn}", use_container_width=True):
                 st.session_state.nivel_selecionado = nivel_btn
                 st.rerun()
 
@@ -293,11 +293,6 @@ def mostrar_dashboard():
 
 # ============================================================
 # EXECUÇÃO
-# ============================================================
-
-if verificar_login():
-    mostrar_dashboard()
-
 # ============================================================
 
 if verificar_login():
