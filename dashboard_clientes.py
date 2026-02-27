@@ -10,7 +10,7 @@ import requests
 
 st.set_page_config(
     page_title="Dashboard Clientes | Evolution Nutrition",
-    page_icon="🐮",
+    page_icon="💚",
     layout="wide"
 )
 
@@ -46,7 +46,7 @@ def verificar_login():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
-        st.markdown("## 🐮 Evolution Nutrition Lab")
+        st.markdown("## 💚 Evolution Nutrition Lab")
         st.markdown("#### Dashboard de Clientes — Acesso Restrito")
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -95,7 +95,7 @@ def mostrar_dashboard():
             st.session_state.autenticado = False
             st.rerun()
 
-    st.markdown("## 🐮 Dashboard de Clientes")
+    st.markdown("## 💚 Dashboard de Clientes")
     st.markdown(f"**Evolution Nutrition Lab** — Olá, `{st.session_state.usuario_logado}`!")
     st.divider()
 
@@ -124,15 +124,23 @@ def mostrar_dashboard():
     col_esq, col_dir = st.columns(2)
 
     with col_esq:
-        st.markdown("### 🎯 Classificação de Clientes")
+        st.markdown("### 🛒 Nível de Compra")
         ordem = ["1ª Compra", "2ª Compra", "3ª Compra", "4ª Compra", "5ª Compra +"]
         contagem = df["classificacao"].value_counts().reindex(ordem).reset_index()
         contagem.columns = ["classificacao", "total"]
-        fig = px.pie(contagem, names="classificacao", values="total",
-                     color_discrete_sequence=["#4ade80","#22d3ee","#818cf8","#f472b6","#fb923c"], hole=0.45)
+        contagem["cor"] = range(len(contagem))
+        fig = px.bar(contagem, x="classificacao", y="total",
+                     color="cor",
+                     color_continuous_scale=["#4ade80", "#22d3ee", "#818cf8", "#f472b6", "#fb923c"],
+                     text="total")
+        fig.update_traces(texttemplate="%{text:,}", textposition="outside", textfont_color="#cbd5e1")
         fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                          font=dict(color="#cbd5e1", family="Sora"), margin=dict(t=20, b=20))
-        fig.update_traces(textfont_color="white", textinfo="percent+label")
+                          font=dict(color="#cbd5e1", family="Sora"),
+                          coloraxis_showscale=False,
+                          xaxis=dict(gridcolor="#2a3045"),
+                          yaxis=dict(gridcolor="#2a3045"),
+                          margin=dict(t=40, b=20),
+                          xaxis_title="", yaxis_title="Clientes")
         st.plotly_chart(fig, use_container_width=True)
 
     with col_dir:
