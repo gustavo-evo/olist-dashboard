@@ -216,7 +216,7 @@ def mostrar_dashboard():
             st.markdown("👑")
     with col_titulo:
         st.markdown("<h2 style='color:#3d2e6b; margin-bottom:0; padding-top:10px'>Dashboard de Clientes</h2>", unsafe_allow_html=True)
-        st.markdown(f"<p style='color:#bbb; margin-top:2px; font-size:0.9rem'>Evolution Nutrition Lab — Olá, <b style='color:#d63aad'>{st.session_state.usuario_logado}</b>!</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='color:#bbb; margin-top:2px; font-size:0.9rem'>Evolution Nutrition Lab — Olá, <b style='color:#d63aad'>{st.session_state.get('usuario_logado', '')}</b>!</p>", unsafe_allow_html=True)
     with col_logout:
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("Sair →"):
@@ -380,4 +380,3 @@ def mostrar_dashboard():
 
 if verificar_login():
     mostrar_dashboard()
-mostrar_dashboard()
