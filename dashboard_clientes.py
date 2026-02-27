@@ -139,7 +139,7 @@ def carregar_imagem_drive(url):
     resposta = requests.get(download_url)
     return Image.open(io.BytesIO(resposta.content))
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=60)
 def carregar_dados():
     url = st.secrets["GOOGLE_DRIVE_URL"]
     file_id = url.split("/d/")[1].split("/")[0]
