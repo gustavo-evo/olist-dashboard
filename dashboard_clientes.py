@@ -139,7 +139,7 @@ def carregar_imagem_drive(url):
     resposta = requests.get(download_url)
     return Image.open(io.BytesIO(resposta.content))
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=300)
 def carregar_dados():
     url = st.secrets["GOOGLE_DRIVE_URL"]
     file_id = url.split("/d/")[1].split("/")[0]
@@ -156,7 +156,7 @@ CORES_NIVEL = {
     "2ª Compra":   "#a855b5",
     "3ª Compra":   "#7c5cbf",
     "4ª Compra":   "#5b6fcf",
-    "5ª Compra (+)": "#3b82d4",
+    "5ª Compra +": "#3b82d4",
 }
 GRADIENTE = ["#d63aad", "#a855b5", "#7c5cbf", "#5b6fcf", "#3b82d4"]
 
@@ -292,7 +292,7 @@ def mostrar_dashboard():
             margin=dict(t=40, b=10),
             xaxis_title="", yaxis_title="Clientes"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="chart_nivel")
 
     with col_dir:
         st.markdown("### 🗺️ Clientes por Estado")
@@ -317,7 +317,7 @@ def mostrar_dashboard():
             margin=dict(t=10, b=10, r=60),
             yaxis_title="", xaxis_title=""
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="chart_estados")
 
     # Linha 2
     col_esq2, col_dir2 = st.columns(2)
@@ -343,7 +343,7 @@ def mostrar_dashboard():
             margin=dict(t=10, b=60),
             xaxis_title="", yaxis_title="Clientes"
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="chart_evolucao")
 
     with col_dir2:
         st.markdown("### 🏙️ Top 15 Cidades")
@@ -368,7 +368,7 @@ def mostrar_dashboard():
             margin=dict(t=10, b=10, r=60),
             yaxis_title="", xaxis_title=""
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key="chart_cidades")
 
     st.divider()
     st.markdown("<p style='text-align:center; color:#ddd; font-size:0.78rem'>Evolution Nutrition Lab · Dashboard de Clientes · Dados via API Olist</p>",
@@ -376,6 +376,11 @@ def mostrar_dashboard():
 
 # ============================================================
 # EXECUÇÃO
+# ============================================================
+
+if verificar_login():
+    mostrar_dashboard()
+
 # ============================================================
 
 if verificar_login():
