@@ -61,6 +61,29 @@ CORES_NIVEL = {
 }
 GRADIENTE = ["#d63aad", "#a855b5", "#7c5cbf", "#5b6fcf", "#3b82d4"]
 
+ORDEM_FAIXAS = ["Menor de 20", "20 – 29", "30 – 39", "40 – 49", "50 – 59", "60+"]
+CORES_FAIXAS = {
+    "Menor de 20": "#f9a8d4",
+    "20 – 29":     "#d63aad",
+    "30 – 39":     "#a855b5",
+    "40 – 49":     "#7c5cbf",
+    "50 – 59":     "#5b6fcf",
+    "60+":         "#3b82d4",
+}
+
+# ============================================================
+# FUNÇÕES AUXILIARES
+# ============================================================
+
+def faixa_etaria(idade):
+    if pd.isna(idade):   return None
+    elif idade < 20:     return "Menor de 20"
+    elif idade < 30:     return "20 – 29"
+    elif idade < 40:     return "30 – 39"
+    elif idade < 50:     return "40 – 49"
+    elif idade < 60:     return "50 – 59"
+    else:                return "60+"
+
 def carregar_imagem_drive(url):
     file_id = url.split("/d/")[1].split("/")[0]
     r = requests.get(f"https://drive.google.com/uc?export=download&id={file_id}")
@@ -76,6 +99,10 @@ def carregar_dados():
     df["atualizado_em"] = pd.to_datetime(df["atualizado_em"], format="%d/%m/%Y %H:%M", errors="coerce")
     df["ultimo_pedido_confirmado"] = pd.to_datetime(df["ultimo_pedido_confirmado"], format="%d/%m/%Y %H:%M", errors="coerce")
     return df
+
+# ============================================================
+# LOGIN
+# ============================================================
 
 def verificar_login():
     if "autenticado" not in st.session_state:
@@ -111,6 +138,10 @@ def verificar_login():
             else:
                 st.error("Usuário ou senha incorretos.")
     return False
+
+# ============================================================
+# DASHBOARD
+# ============================================================
 
 def mostrar_dashboard():
     df_completo = carregar_dados()
@@ -164,6 +195,10 @@ def mostrar_dashboard():
             """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
+
+    # ----------------------------------------------------------
+    # GRÁFICOS PRINCIPAIS
+    # ----------------------------------------------------------
 
     col_esq, col_dir = st.columns(2)
 
@@ -238,10 +273,171 @@ def mostrar_dashboard():
                           margin=dict(t=10, b=10, r=60), yaxis_title="", xaxis_title="")
         st.plotly_chart(fig, key="chart_cidades")
 
+    # ----------------------------------------------------------
+    # GÊNERO
+    # ----------------------------------------------------------
+
+    if "genero" in df.columns:
+        st.divider()
+        st.markdown("## 🚻 Distribuição por Gênero")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_g1, col_g2 = st.columns([1, 3])
+
+        with col_g1:
+            gen = df["genero"].value_counts()
+            total_gen = gen.sum()
+            for label, valor in gen.items():
+                pct = valor / total_gen * 100
+                st.markdown(f"""
+                    <div class="metric-card" style="margin-bottom:12px">
+                        <div class="metric-value">{pct:.1f}%</div>
+                        <div class="metric-label">{label}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        with col_g2:
+            gen_df = gen.reset_index()
+            gen_df.columns = ["genero", "total"]
+            fig = px.pie(gen_df, names="genero", values="total",
+                         color="genero",
+                         color_discrete_map={"Feminino": "#d63aad", "Masculino": "#5b6fcf"},
+                         hole=0.55)
+            fig.update_traces(texttemplate="%{label}<br><b>%{percent}</b>",
+                              hovertemplate="<b>%{label}</b><br>Clientes: %{value:,}<extra></extra>")
+            fig.update_layout(paper_bgcolor="white", font=dict(color="#3d2e6b", family="Sora"),
+                              showlegend=False, margin=dict(t=10, b=10))
+            st.plotly_chart(fig, key="chart_genero")
+
+    # ----------------------------------------------------------
+    # PÚBLICO-ALVO
+    # ----------------------------------------------------------
+
+    colunas_pub = {"data_nascimento", "genero", "classificacao"}
+    if colunas_pub.issubset(df.columns):
+        st.divider()
+        st.markdown("## 🎯 Análise de Público-Alvo")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        df_pub = df.copy()
+        df_pub["data_nascimento"] = pd.to_datetime(df_pub["data_nascimento"], format="%d/%m/%Y", errors="coerce")
+        hoje = pd.Timestamp.now()
+        df_pub["idade"] = ((hoje - df_pub["data_nascimento"]).dt.days / 365.25).astype("Int64")
+        df_pub = df_pub[df_pub["idade"].between(14, 100)]
+        df_pub["faixa"] = df_pub["idade"].apply(faixa_etaria)
+        df_pub = df_pub[df_pub["faixa"].notna()]
+
+        total_pub = len(df_pub)
+        st.caption(f"Base com data de nascimento válida: **{total_pub:,} clientes** ({total_pub/len(df)*100:.1f}% do total filtrado)")
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Gênero x Faixa etária
+        st.markdown("### 👥 Gênero por Faixa Etária")
+        gen_faixa = (
+            df_pub.groupby(["faixa", "genero"])
+            .size().reset_index(name="total")
+        )
+        gen_faixa["faixa"] = pd.Categorical(gen_faixa["faixa"], categories=ORDEM_FAIXAS, ordered=True)
+        gen_faixa = gen_faixa.sort_values("faixa")
+
+        fig = px.bar(gen_faixa, x="faixa", y="total", color="genero", barmode="group",
+                     color_discrete_map={"Feminino": "#d63aad", "Masculino": "#5b6fcf"}, text="total")
+        fig.update_traces(texttemplate="%{text:,}", textposition="outside",
+                          hovertemplate="<b>%{x}</b> · %{fullData.name}<br>Clientes: %{y:,}<extra></extra>")
+        fig.update_layout(paper_bgcolor="white", plot_bgcolor="white",
+                          font=dict(color="#3d2e6b", family="Sora"),
+                          legend=dict(title="", orientation="h", y=1.08),
+                          xaxis=dict(showgrid=False), yaxis=dict(gridcolor="#f5f0ff"),
+                          margin=dict(t=40, b=10), xaxis_title="", yaxis_title="Clientes")
+        st.plotly_chart(fig, use_container_width=True, key="chart_gen_faixa")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        col_a, col_b = st.columns(2)
+
+        with col_a:
+            st.markdown("### 🏆 Top Faixas que Mais Compram")
+            df_pub["pedidos_confirmados"] = pd.to_numeric(df_pub["pedidos_confirmados"], errors="coerce").fillna(0)
+            media_compras = (
+                df_pub.groupby("faixa")["pedidos_confirmados"]
+                .agg(["mean", "count"])
+                .rename(columns={"mean": "media", "count": "clientes"})
+                .reindex(ORDEM_FAIXAS).dropna().reset_index()
+            )
+            media_compras["media"] = media_compras["media"].round(2)
+
+            fig = px.bar(media_compras, x="faixa", y="media",
+                         color="media", color_continuous_scale=GRADIENTE, text="media")
+            fig.update_traces(
+                texttemplate="%{text:.2f}", textposition="outside",
+                hovertemplate="<b>%{x}</b><br>Média de compras: %{y:.2f}<br>Clientes: %{customdata[0]:,}<extra></extra>",
+                customdata=media_compras[["clientes"]].values,
+            )
+            fig.update_layout(paper_bgcolor="white", plot_bgcolor="white",
+                              font=dict(color="#3d2e6b", family="Sora"),
+                              coloraxis_showscale=False,
+                              xaxis=dict(showgrid=False), yaxis=dict(gridcolor="#f5f0ff"),
+                              margin=dict(t=30, b=10), xaxis_title="", yaxis_title="Média de Pedidos")
+            st.plotly_chart(fig, use_container_width=True, key="chart_top_faixas")
+
+        with col_b:
+            st.markdown("### 🛒 Nível de Compra por Faixa Etária")
+            nivel_faixa = (
+                df_pub.groupby(["faixa", "classificacao"])
+                .size().reset_index(name="total")
+            )
+            nivel_faixa["faixa"] = pd.Categorical(nivel_faixa["faixa"], categories=ORDEM_FAIXAS, ordered=True)
+            nivel_faixa = nivel_faixa.sort_values("faixa")
+
+            fig = px.bar(nivel_faixa, x="faixa", y="total", color="classificacao",
+                         color_discrete_map=CORES_NIVEL, barmode="stack", text="total")
+            fig.update_traces(texttemplate="%{text:,}", textposition="inside",
+                              hovertemplate="<b>%{x}</b> · %{fullData.name}<br>Clientes: %{y:,}<extra></extra>")
+            fig.update_layout(paper_bgcolor="white", plot_bgcolor="white",
+                              font=dict(color="#3d2e6b", family="Sora"),
+                              legend=dict(title="", orientation="h", y=-0.2),
+                              xaxis=dict(showgrid=False), yaxis=dict(gridcolor="#f5f0ff"),
+                              margin=dict(t=30, b=80), xaxis_title="", yaxis_title="Clientes")
+            st.plotly_chart(fig, use_container_width=True, key="chart_nivel_faixa")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Evolução do público ao longo do tempo
+        st.markdown("### 📅 Evolução do Público por Faixa Etária")
+        df_tempo = df_pub.dropna(subset=["atualizado_em"]).copy()
+        df_tempo["mes"] = df_tempo["atualizado_em"].dt.to_period("M").astype(str)
+
+        evolucao_faixa = (
+            df_tempo.groupby(["mes", "faixa"])
+            .size().reset_index(name="total")
+        )
+        evolucao_faixa["faixa"] = pd.Categorical(evolucao_faixa["faixa"], categories=ORDEM_FAIXAS, ordered=True)
+        ultimos_meses = sorted(evolucao_faixa["mes"].unique())[-24:]
+        evolucao_faixa = evolucao_faixa[evolucao_faixa["mes"].isin(ultimos_meses)]
+
+        fig = px.line(evolucao_faixa, x="mes", y="total", color="faixa",
+                      color_discrete_map=CORES_FAIXAS, markers=True, line_shape="spline")
+        fig.update_traces(marker=dict(size=5, line=dict(color="white", width=1)),
+                          hovertemplate="<b>%{fullData.name}</b><br>%{x}<br>Clientes: %{y:,}<extra></extra>")
+        fig.update_layout(paper_bgcolor="white", plot_bgcolor="white",
+                          font=dict(color="#3d2e6b", family="Sora"),
+                          legend=dict(title="Faixa Etária", orientation="h", y=-0.2),
+                          xaxis=dict(tickangle=-45, showgrid=False),
+                          yaxis=dict(gridcolor="#f5f0ff"),
+                          margin=dict(t=20, b=80), xaxis_title="", yaxis_title="Novos Clientes")
+        st.plotly_chart(fig, use_container_width=True, key="chart_evolucao_faixa")
+
+    # ----------------------------------------------------------
+    # RODAPÉ
+    # ----------------------------------------------------------
+
     st.divider()
     st.markdown("<p style='text-align:center; color:#ddd; font-size:0.78rem'>Evolution Nutrition Lab · Dashboard de Clientes · Dados via API Olist</p>",
                 unsafe_allow_html=True)
 
+# ============================================================
+# EXECUÇÃO
+# ============================================================
+
 if verificar_login():
     mostrar_dashboard()
-
