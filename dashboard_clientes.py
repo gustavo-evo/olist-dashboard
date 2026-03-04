@@ -244,8 +244,3 @@ def mostrar_dashboard():
 
 if verificar_login():
     mostrar_dashboard()
-
-
-if verificar_login():
-    mostrar_dashboard()
-
