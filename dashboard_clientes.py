@@ -322,7 +322,8 @@ def mostrar_dashboard():
         df_pub = df.copy()
         df_pub["data_nascimento"] = pd.to_datetime(df_pub["data_nascimento"], format="%d/%m/%Y", errors="coerce")
         hoje = pd.Timestamp.now()
-        df_pub["idade"] = ((hoje - df_pub["data_nascimento"]).dt.days / 365.25).astype("Int64")
+        df_pub["idade"] = ((hoje - df_pub["data_nascimento"]).dt.days / 365.25).fillna(-1).astype(int)
+        df_pub["idade"] = df_pub["idade"].replace(-1, pd.NA)
         df_pub = df_pub[df_pub["idade"].between(14, 100)]
         df_pub["faixa"] = df_pub["idade"].apply(faixa_etaria)
         df_pub = df_pub[df_pub["faixa"].notna()]
