@@ -156,7 +156,7 @@ CORES_NIVEL = {
     "2ª Compra":   "#a855b5",
     "3ª Compra":   "#7c5cbf",
     "4ª Compra":   "#5b6fcf",
-    "5ª Compra +": "#3b82d4",
+    "5ª Compra (+)": "#3b82d4",
 }
 GRADIENTE = ["#d63aad", "#a855b5", "#7c5cbf", "#5b6fcf", "#3b82d4"]
 
