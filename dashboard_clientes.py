@@ -66,7 +66,7 @@ def carregar_imagem_drive(url):
     r = requests.get(f"https://drive.google.com/uc?export=download&id={file_id}")
     return Image.open(io.BytesIO(r.content))
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def carregar_dados():
     url = st.secrets["GOOGLE_DRIVE_URL"]
     file_id = url.split("/d/")[1].split("/")[0]
@@ -114,6 +114,9 @@ def verificar_login():
 
 def mostrar_dashboard():
     df_completo = carregar_dados()
+
+    # DEBUG - remover depois
+    st.caption(f"📦 CSV carregado: {len(df_completo):,} linhas | Colunas: {list(df_completo.columns[:5])} | Classificações: {df_completo['classificacao'].unique().tolist()}")
 
     col_logo, col_titulo, col_logout = st.columns([1, 8, 1])
     with col_logo:
@@ -238,6 +241,10 @@ def mostrar_dashboard():
     st.divider()
     st.markdown("<p style='text-align:center; color:#ddd; font-size:0.78rem'>Evolution Nutrition Lab · Dashboard de Clientes · Dados via API Olist</p>",
                 unsafe_allow_html=True)
+
+if verificar_login():
+    mostrar_dashboard()
+
 
 if verificar_login():
     mostrar_dashboard()
