@@ -66,7 +66,7 @@ def carregar_imagem_drive(url):
     r = requests.get(f"https://drive.google.com/uc?export=download&id={file_id}")
     return Image.open(io.BytesIO(r.content))
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=0)
 def carregar_dados():
     url = st.secrets["GOOGLE_DRIVE_URL"]
     file_id = url.split("/d/")[1].split("/")[0]
@@ -244,3 +244,4 @@ def mostrar_dashboard():
 
 if verificar_login():
     mostrar_dashboard()
+
